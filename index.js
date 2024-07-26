@@ -12,10 +12,10 @@ const BASE_PATH = 'C:\\Users\\hp\\Documents\\servers';
 app.use(bodyParser.json());
 
 app.post('/new', (req, res) => {
-    const { command, siteName, serverName } = req.body;
+    const { line, siteName, serverName, type } = req.body;
 
-    if (!command || !siteName || !serverName) {
-        return res.status(400).send('Missing command, siteName, or serverName');
+    if (!line || !siteName || !serverName || !type) {
+        return res.status(400).send('Missing line, siteName, serverName, or type');
     }
 
     const serverDir = path.join(BASE_PATH, serverName);
@@ -25,18 +25,24 @@ app.post('/new', (req, res) => {
         return res.status(404).send('Site not found');
     }
 
-    // Path to the commands file
-    const commandsFile = path.join(siteDir, 'commands');
-
-    // Ensure the commands file exists
-    if (!fs.existsSync(commandsFile)) {
-        fs.writeFileSync(commandsFile, '');
+    let filePath;
+    if (type === 'command') {
+        filePath = path.join(siteDir, 'commands');
+    } else if (type === 'crontab') {
+        filePath = path.join(siteDir, 'crontabs');
+    } else {
+        return res.status(400).send('Invalid type. Must be "command" or "crontab".');
     }
 
-    // Register the new command
-    fs.appendFileSync(commandsFile, `${command}\n`);
+    // Ensure the file exists
+    if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, '');
+    }
 
-    res.status(201).send('Command registered successfully');
+    // Register the new line
+    fs.appendFileSync(filePath, `${line}\n`);
+
+    res.status(201).send(`${type} registered successfully`);
 });
 
 app.listen(PORT, () => {
